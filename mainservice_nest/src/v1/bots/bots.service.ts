@@ -100,6 +100,8 @@ export class MyBotsService {
   }
 
   async createDataSource(data: any) {
+    console.log({ data });
+
     try {
       const createdDataSource = await this.prismaService.datasources.create({
         data,

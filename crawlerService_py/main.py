@@ -61,6 +61,8 @@ def crawl_and_extract(bot_id,links):
 def consume_urls(consumer, topic):
     consumer.subscribe([topic])
 
+    print("Connected to topic:" , topic)
+
     while True:
         msg = consumer.poll(1.0)
 
