@@ -61,8 +61,6 @@ export class MyBotsController {
     @Body() botsDTO: BotCreate,
     @User() user?: any,
   ) {
-    ;
-
     const createdBot = await this.mybotsServices.cretaeBots(user?.user_id);
     const data = {
       ...botsDTO,

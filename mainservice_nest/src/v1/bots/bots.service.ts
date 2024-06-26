@@ -1,10 +1,19 @@
-import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  HttpException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/infrastructure/prisma/prisma.service';
-import { BotCreate } from './dtos/mybots.dto';
+//import { BotCreate } from './dtos/mybots.dto';
+import { ClientKafka } from '@nestjs/microservices';
 
 @Injectable()
 export class MyBotsService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    @Inject('KAFKA_SERVICE') private readonly clientKafka: ClientKafka,
+  ) {}
 
   private _toCamelCase(obj: any): any {
     if (Array.isArray(obj)) {
@@ -19,6 +28,25 @@ export class MyBotsService {
       }, {} as any);
     }
     return obj;
+  }
+  private _pushJobToKafka(botId: any, data: any): any {
+    type Datesources = 'text' | 'qa' | 'urls' | 'files';
+
+    const kafkaMessage: {
+      botId: any;
+      datasources: Record<Datesources, any>;
+    } = {
+      botId,
+      datasources: {
+        ...(data.text_input && { text: data.text_input }),
+        ...(data.qANDa_input && { qa: data.qANDa_input }),
+        ...(data.urls && { urls: data.urls }),
+        ...(data.static_files && { files: data.static_files }),
+      },
+    };
+
+    console.log({ kafkaMessage });
+    this.clientKafka.emit('aqkjtrhb-default', JSON.stringify(kafkaMessage));
   }
 
   async cretaeBots(userId: string) {
@@ -106,6 +134,9 @@ export class MyBotsService {
       const createdDataSource = await this.prismaService.datasources.create({
         data,
       });
+
+      this._pushJobToKafka(data.bot_id, data);
+
       return createdDataSource;
     } catch (error) {
       console.log(error);

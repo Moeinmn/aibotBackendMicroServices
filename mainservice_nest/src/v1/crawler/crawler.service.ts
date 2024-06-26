@@ -18,7 +18,7 @@ export class CrawlerService {
       $(links).each(function (i, link) {
         let href = $(link).attr('href');
         if (href[0] === '/') {
-          // useful for scenarios that have / at the end of string
+          // useful for scenarios t==hat have / at the end of string
           const urlWithoutSlash = href.substring(1);
           href = url + href;
         }

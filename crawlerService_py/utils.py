@@ -1,6 +1,8 @@
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from embed import create_document_embedding
 
+#def chunk_documents(docs, file_type):
+
 def recursive_char_splitter(docs):
     text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=1000,
