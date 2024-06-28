@@ -1,5 +1,6 @@
 import asyncio
 from bs4 import BeautifulSoup as Soup
+from utils import recursive_char_splitter
 from langchain_community.document_loaders.recursive_url_loader import RecursiveUrlLoader
 
 
@@ -15,9 +16,9 @@ async def crawl_and_extract(link):
         )
         docs = loader.load();
 
-        #chunked_docs = recursive_char_splitter(docs)
+        chunked_docs = recursive_char_splitter(docs)
 
-        return docs
+        return chunked_docs
 
     except Exception as e:
         print(f"Error crawling {link}: {e}")
@@ -31,9 +32,11 @@ async def handle_urls_datasource(urls):
 
     all_chunks = await asyncio.gather(*tasks)
 
-    print(f"Processed URLs: {all_chunks}")
+    all_chunks_flat = [item for sublist in all_chunks for item in sublist]
 
-    return all_chunks
+    print(f"Processed URLs: {all_chunks_flat}")
+
+    return all_chunks_flat
 
 
 # def crawl_and_extract(bot_id, links):

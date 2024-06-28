@@ -33,6 +33,7 @@ async def handle_other_files():
 async def handle_files_datasource(files):
     tasks = [handle_md_files(), handle_other_files()]
     all_chunks = await asyncio.gather(*tasks)
+    all_chunks_flat = [item for sublist in all_chunks for item in sublist]
     print(f"Processed files: {files}")
     print(f"Processed files chunks: {all_chunks}")
-    return all_chunks
+    return all_chunks_flat

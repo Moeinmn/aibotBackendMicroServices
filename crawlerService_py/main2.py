@@ -62,19 +62,29 @@ def crawl_and_extract(bot_id, links):
 async def aggregate_results(datasources):
     tasks = []
 
+    #ok
     if 'text' in datasources:
         tasks.append(handle_text_datasource(datasources['text']))
-    # if 'qa' in datasources:
-    #     tasks.append(handle_qa_datasource(datasources['qa']))
-    # if 'urls' in datasources:
-    #     tasks.append(handle_urls_datasource(datasources['urls']))
+    #ok
+    if 'qa' in datasources:
+        tasks.append(handle_qa_datasource(datasources['qa']))
+    #not ok
+    if 'urls' in datasources:
+        tasks.append(handle_urls_datasource(datasources['urls']))
+    #not ok
     if 'files' in datasources:
         tasks.append(handle_files_datasource(datasources['files']))
 
     all_chunks = await asyncio.gather(*tasks)
 
-    flattened_list = [item for sublist in all_chunks for item in sublist]
+    # print(1111,all_chunks[0])
+    # print(2222, all_chunks[1])
+    # print(3333, all_chunks[2])
+    # print(4444, all_chunks[3])
 
+    flattened_list = [item for sublist in all_chunks for item in sublist]
+    print(1111111111,flattened_list)
+    print(2222222222, len(flattened_list))
     return flattened_list
 
 
