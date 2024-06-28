@@ -76,6 +76,7 @@ class Database:
         
         with self.connection.cursor() as cursor:
             chunck_uuid = str(uuid.uuid4())
+            #(%s,%s, %s, %s , %s) , (%s,%s, %s, %s , %s)
             cursor.execute(
                 "INSERT INTO langchain_pg_embedding (collection_id , document , cmetadata , embedding , uuid) VALUES (%s,%s, %s, %s , %s) RETURNING uuid;",
                 (collection_id, content, json.dumps(metadata), embedding , chunck_uuid)
