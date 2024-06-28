@@ -21,6 +21,7 @@ import { hostname } from 'os';
             clientId: hostname(),
             brokers: ['dory.srvs.cloudkafka.com:9094'],
           },
+          
           producerOnlyMode: true,
           // consumer: {
           //   groupId: 'aqkjtrhb-foo',

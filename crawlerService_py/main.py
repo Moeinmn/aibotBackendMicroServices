@@ -5,12 +5,15 @@ from confluent_kafka import Consumer
 from db import database_instance
 import socket
 import json
-from langchain_community.document_loaders.recursive_url_loader import RecursiveUrlLoader
-from bs4 import BeautifulSoup as Soup
 from utils import recursive_char_splitter
 from embed import create_document_embedding
-
+import asyncio
 import os
+
+from modules.qa_processor import handle_qa_datasource
+from modules.file_processor import handle_files_datasource
+from modules.link_processor import handle_urls_datasource
+from modules.text_processor import handle_text_datasource
 
 load_dotenv()
 
@@ -23,45 +26,91 @@ consumer_conf = {'bootstrap.servers': 'dory.srvs.cloudkafka.com:9094',
                  'auto.offset.reset': 'smallest'}
 
 
-def crawl_and_extract(bot_id,links):
+def crawl_and_extract(bot_id, links):
     collection_id = database_instance.create_or_return_collection_uuid(bot_id)
-    
+
     for link in links:
-        print("Now in link:" , link)
+        print("Now in link:", link)
         try:
             # page = requests.get(link)
             # soup = BeautifulSoup(page.text, 'html.parser')
             # text = soup.get_text(separator='\n', strip=True)
             # print(text)
-            
-            
+
             loader = RecursiveUrlLoader(
                 url=link, max_depth=1, extractor=lambda x: Soup(x, "html.parser").text
-                )
+            )
             docs = loader.load();
-            
+
             chunked_docs = recursive_char_splitter(docs)
-            
+
             embedded_chunks = create_document_embedding(chunked_docs)
-            
+
             for index, chunk in enumerate(chunked_docs):
                 database_instance.insert_embedding_record(bot_id=bot_id,
-                                        content = chunk.page_content,
-                                        metadata = chunk.metadata,
-                                        embedding = embedded_chunks[index],
-                                        collection_id = collection_id
-                                        )
-            
+                                                          content=chunk.page_content,
+                                                          metadata=chunk.metadata,
+                                                          embedding=embedded_chunks[index],
+                                                          collection_id=collection_id
+                                                          )
 
             print(f"Successfully crawled and extracted from: {link}")
         except Exception as e:
             print(f"Error crawling {link}: {e}")
 
 
-def consume_urls(consumer, topic):
+async def aggregate_results(datasources):
+    tasks = []
+
+    if 'text' in datasources:
+        tasks.append(handle_text_datasource(datasources['text']))
+
+    if 'qa' in datasources:
+        tasks.append(handle_qa_datasource(datasources['qa']))
+
+    if 'urls' in datasources:
+        tasks.append(handle_urls_datasource(datasources['urls']))
+
+    if 'files' in datasources:
+        tasks.append(handle_files_datasource(datasources['files']))
+
+    all_chunks = await asyncio.gather(*tasks)
+    return all_chunks
+
+
+async def handle_incoming_job_events(job):
+    received_msg = job.value()
+    msg_obj = json.loads(received_msg)
+
+    datasources = msg_obj['datasources']
+    bot_id = msg_obj['botId']
+
+    print(f'URLs received for Bot: {bot_id}')
+    print(f'Received Datasources from Kafka: {datasources}')
+
+    # Handle different data sources separately
+    all_chunks = await aggregate_results(datasources)
+    for chunk in all_chunks:
+        print(chunk)
+
+    collection_id = database_instance.create_or_return_collection_uuid(bot_id)
+
+    embedded_chunks = create_document_embedding(chunked_docs)
+
+    # Need improvment , sends several request to DB
+    for index, chunk in enumerate(chunked_docs):
+        database_instance.insert_embedding_record(bot_id=bot_id,
+                                                  content=chunk.page_content,
+                                                  metadata=chunk.metadata,
+                                                  embedding=embedded_chunks[index],
+                                                  collection_id=collection_id
+                                                  )
+
+
+def consume_jobs(consumer, topic):
     consumer.subscribe([topic])
 
-    print("Connected to topic:" , topic)
+    print("Connected to topic:", topic)
 
     while True:
         msg = consumer.poll(1.0)
@@ -72,16 +121,9 @@ def consume_urls(consumer, topic):
             print("Consumer error: {}".format(msg.error()))
             continue
 
-        received_msg = msg.value()
-        msg_obj = json.loads(received_msg)
-        
-        url_list = msg_obj['urlArray']
-        bot_id = msg_obj['botId']
-        
-        print(f'URLs received for Bot: {bot_id}')
-        print(f'Received URLs from Kafka: {url_list}')
+        handle_incoming_job_events(msg)
 
-        crawl_and_extract(bot_id,url_list)
+        crawl_and_extract(bot_id, url_list)
 
 
 if __name__ == "__main__":
@@ -93,7 +135,7 @@ if __name__ == "__main__":
 
     consumer = Consumer(consumer_conf)
 
-    consume_urls(consumer, 'aqkjtrhb-default')
+    consume_jobs(consumer, 'aqkjtrhb-default')
 
     # with database_instance as db:
     #     db.execute_query("SELECT * FROM bots")

@@ -4,8 +4,8 @@ from langchain_community.document_loaders import DirectoryLoader
 
 md_loader = DirectoryLoader('../', glob="**/*.md|**/*.json")
 json_loader = DirectoryLoader('../', glob="**/*.md|**/*.json")
-general_loader = DirectoryLoader('../', glob="**/*.doc|**/*.docx|**/*.pdf")
-docs = loader.load()
+general_loader = DirectoryLoader('../', glob="**/*.[txt|md]")
+docs = general_loader.load()
 
 len(docs)
 
