@@ -163,7 +163,6 @@ export class MyBotsController {
   @UseGuards(JwtAuthGuard)
   @Get('list/:bot_id')
   async getBot(@Param('bot_id') botId: string, @User() user: any) {
-    console.log("twstt")
     try {
       const result = await this.mybotsServices.findeBot(botId, user.user_id);
       if (!result) {

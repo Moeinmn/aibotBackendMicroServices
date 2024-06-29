@@ -62,16 +62,16 @@ def crawl_and_extract(bot_id, links):
 async def aggregate_results(datasources):
     tasks = []
 
-    #ok
+    # ok
     if 'text' in datasources:
         tasks.append(handle_text_datasource(datasources['text']))
-    #ok
+    # ok
     if 'qa' in datasources:
         tasks.append(handle_qa_datasource(datasources['qa']))
-    #not ok
+    # not ok
     if 'urls' in datasources:
         tasks.append(handle_urls_datasource(datasources['urls']))
-    #not ok
+    # not ok
     if 'files' in datasources:
         tasks.append(handle_files_datasource(datasources['files']))
 
@@ -83,8 +83,7 @@ async def aggregate_results(datasources):
     # print(4444, all_chunks[3])
 
     flattened_list = [item for sublist in all_chunks for item in sublist]
-    print(1111111111,flattened_list)
-    print(2222222222, len(flattened_list))
+
     return flattened_list
 
 
@@ -92,11 +91,21 @@ async def handle_incoming_job_events(job):
     # received_msg = job.value()
     # msg_obj = json.loads(received_msg)
 
-    bot_id = "123456887"
+    bot_id = "dbef3edd-b2cc-4e44-bc08-d0e5945bad2c"
 
     # Define the datasources as given
     datasources = {
-        "text": "Sample text inputSample text . Sample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text input. Sample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text inputSample text input",
+        "text": "Sample text inputSample text . Sample text inputSample text inputSample text inputSample text "
+                "inputSample text inputSample text inputSample text inputSample text inputSample text inputSample "
+                "text inputSample text inputSample text inputSample text inputSample text inputSample text "
+                "inputSample text inputSample text inputSample text inputSample text inputSample text inputSample "
+                "text inputSample text inputSample text inputSample text inputSample text inputSample text "
+                "inputSample text input. Sample text inputSample text inputSample text inputSample text inputSample "
+                "text inputSample text inputSample text inputSample text inputSample text inputSample text "
+                "inputSample text inputSample text inputSample text inputSample text inputSample text inputSample "
+                "text inputSample text inputSample text inputSample text inputSample text inputSample text "
+                "inputSample text inputSample text inputSample text inputSample text inputSample text inputSample "
+                "text input",
         "qa": [{
             "question": "Sample Q&A input",
             "answer": "Sample txt goes here"
@@ -114,11 +123,15 @@ async def handle_incoming_job_events(job):
     # Handle different data sources separately
     all_chunks = await aggregate_results(datasources)
 
-    print(0000,len(all_chunks) , all_chunks)
+    collection_id = database_instance.create_or_return_collection_uuid(bot_id)
 
-    # collection_id = database_instance.create_or_return_collection_uuid(bot_id)
+    embedded_chunks = create_document_embedding(all_chunks)
 
-    # embedded_chunks = create_document_embedding(chunked_docs)
+    database_instance.bulk_insert_embedding_record(bot_id=bot_id,
+                                                   records=all_chunks,
+                                                   embeddings=embedded_chunks,
+                                                   collection_id=collection_id
+                                                   )
 
     # Need improvment , sends several request to DB
     # for index, chunk in enumerate(chunked_docs):
