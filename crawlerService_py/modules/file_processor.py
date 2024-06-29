@@ -1,5 +1,6 @@
 import asyncio
 import os
+import logging
 from langchain_community.document_loaders import UnstructuredPDFLoader
 
 # https://medium.com/@varsha.rainer/document-loaders-in-langchain-7c2db9851123
@@ -7,12 +8,23 @@ from langchain_community.document_loaders import UnstructuredPDFLoader
 from langchain_community.document_loaders import DirectoryLoader
 from utils import recursive_char_splitter
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 async def load_documents(file_type):
-    glob_pattern = f"**/*.{file_type}"
-    loader = DirectoryLoader(os.path.join(os.getcwd(), "dir"), glob=glob_pattern, silent_errors=True)
-    docs = loader.load()
-    return docs if len(docs) != 0 else None
+    try:
+        glob_pattern = f"**/*.{file_type}"
+        loader = DirectoryLoader(os.path.join(os.getcwd(), "dir"), glob=glob_pattern, silent_errors=True)
+        docs = loader.load()
+        if not docs:
+            logger.info(f"No documents found for file type: {file_type}")
+            return None
+        return docs
+    except Exception as e:
+        logger.error(f"Error loading documents for file type {file_type}: {e}")
+        return None
+
 
 
 async def handle_md_files():
@@ -31,9 +43,13 @@ async def handle_other_files():
 
 
 async def handle_files_datasource(files):
-    tasks = [handle_md_files(), handle_other_files()]
-    all_chunks = await asyncio.gather(*tasks)
-    all_chunks_flat = [item for sublist in all_chunks for item in sublist]
-    print(f"Processed files: {files}")
-    print(f"Processed files chunks: {all_chunks}")
-    return all_chunks_flat
+    try:
+        tasks = [handle_md_files(), handle_other_files()]
+        all_chunks = await asyncio.gather(*tasks)
+        all_chunks_flat = [item for sublist in all_chunks if sublist is not None for item in sublist]
+        logger.info(f"Processed files: {files}")
+        logger.info(f"Processed files chunks: {all_chunks}")
+        return all_chunks_flat
+    except Exception as e:
+        logger.error(f"Error handling files datasource: {e}")
+        return []
