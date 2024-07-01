@@ -39,14 +39,14 @@ export class MyBotsService {
       botId,
       datasources: {
         ...(data.text_input && { text: data.text_input }),
-        ...(data.qANDa_input && { qa: data.qANDa_input }),
-        ...(data.urls && { urls: data.urls }),
+        ...(data.qANDa_input && { qa: JSON.parse(data.qANDa_input) }),
+        ...(data.urls && { urls: JSON.parse(data.urls) }),
         ...(data.static_files && { files: data.static_files }),
       },
     };
 
-    console.log({ kafkaMessage });
     this.clientKafka.emit('aqkjtrhb-default', JSON.stringify(kafkaMessage));
+    console.log({kafkaMessage});
   }
 
   async cretaeBots(userId: string) {
