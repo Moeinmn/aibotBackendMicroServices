@@ -8,14 +8,36 @@ datasource db {
 }
 
 model users {
-  user_id      String   @id @default(uuid())
-  name         String   @db.VarChar(255)
-  lastName     String?  @db.VarChar(255)
-  email        String?  @unique @db.VarChar(255)
-  passwordHash String   @db.VarChar(255)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
-  bots         bots[]
+  user_id       String         @id @default(uuid())
+  name          String         @db.VarChar(255)
+  lastName      String?        @db.VarChar(255)
+  email         String?        @unique @db.VarChar(255)
+  passwordHash  String         @db.VarChar(255)
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @updatedAt
+  bots          bots[]
+  subscriptions subscription[]
+}
+
+model pricing_tier {
+  id            Int            @id @default(autoincrement())
+  tier_name     String         @db.VarChar(255)
+  price         Float
+  features      String
+  bot_count     Int            @default(8000)
+  token_limit   Int            @default(8000)
+  storage_limit Int            @default(8000)
+  subscriptions subscription[]
+}
+
+model subscription {
+  id         Int          @id @default(autoincrement())
+  user_id    String
+  tier_id    Int
+  start_date DateTime
+  end_date   DateTime
+  user       users        @relation(fields: [user_id], references: [user_id])
+  tier       pricing_tier @relation(fields: [tier_id], references: [id])
 }
 
 model bots {
@@ -27,8 +49,8 @@ model bots {
   user_id          String
   general_configs  Json            @default("{\"has_memory\": false}")
   model_configs    Json            @default("{\"model_name\": \"GPT-3.5Turbo\", \"Temperature\": 0.5}")
-  ui_configs       Json           
-  security_configs Json            
+  ui_configs       Json
+  security_configs Json
   evals            Json            @default("{}")
   status           String          @default("notActive")
   token_limit      Int             @default(8000000)
@@ -40,15 +62,15 @@ model bots {
 }
 
 model datasources {
-  datasource_id  String @id @default(uuid())
-  bot_id         String 
-  static_files   String?   @default("[]")
+  datasource_id  String  @id @default(uuid())
+  bot_id         String
+  static_files   String? @default("[]")
   urls           String? @default("[]")
   text_input     String? @db.VarChar(255)
   qANDa_input    String? @db.VarChar(255)
   knowledge_base Json?   @default("{}")
   total_char     String? @db.VarChar(255)
-  bot            bots   @relation(fields: [bot_id], references: [bot_id],onDelete: Cascade)
+  bot            bots    @relation(fields: [bot_id], references: [bot_id], onDelete: Cascade)
 }
 
 model conversations {
@@ -73,6 +95,7 @@ model records {
   //current_page    String?    // Optional field - Add it in future
   user_message_time DateTime
   llm_response_time DateTime
+  tokens_used       Int           @default(0)
   // created_at        DateTime      @default(now())
   conversations     conversations @relation(fields: [conversation_id], references: [conversation_id])
   //bot               bots          @relation(fields: [bot_id], references: [bot_id])
