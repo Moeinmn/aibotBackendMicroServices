@@ -12,7 +12,7 @@ async def crawl_and_extract(link):
         # print(text)
 
         loader = RecursiveUrlLoader(
-            url=link, max_depth=1, extractor=lambda x: Soup(x, "html.parser").text
+            url=link, max_depth=1 , timeout=4, extractor=lambda x: Soup(x, "html.parser").text
         )
         docs = loader.load()
 

@@ -89,7 +89,7 @@ async def aggregate_results(datasources):
 
 async def handle_incoming_job_events(job):
     # received_msg = job.value()
-    # msg_obj = json.loads(received_msg)
+    # msg_obj = jso n.loads(received_msg)
 
     bot_id = "dbef3edd-b2cc-4e44-bc08-d0e5945bad2c"
 
