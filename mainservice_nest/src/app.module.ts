@@ -13,6 +13,8 @@ import { ChatService } from './v1/chat/chat.service';
 //import { ChatController } from './v1/chat/chat.controller';
 import { HttpModule } from '@nestjs/axios';
 import { WidgetModule } from './v1/widget/widget.module';
+import { TasksModule } from './v1/tasks/tasks.module';
+import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
     CrawlerModule,
@@ -29,6 +31,8 @@ import { WidgetModule } from './v1/widget/widget.module';
       }),
       global: true,
     },
+    ScheduleModule.forRoot(),
+    TasksModule,
   ],
   controllers: [AppController],
   providers: [
