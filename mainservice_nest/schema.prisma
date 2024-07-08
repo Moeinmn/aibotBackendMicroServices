@@ -23,10 +23,12 @@ model pricing_tier {
   id            Int            @id @default(autoincrement())
   tier_name     String         @db.VarChar(255)
   price         Float
-  features      String
-  bot_count     Int            @default(8000)
-  token_limit   Int            @default(8000)
-  storage_limit Int            @default(8000)
+  bot_count     Int            
+  context_limit   Int            
+  token_limit   Int            
+  storage_limit Int            
+  //memory
+  //models
   subscriptions subscription[]
 }
 
