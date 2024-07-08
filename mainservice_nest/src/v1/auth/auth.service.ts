@@ -55,6 +55,40 @@ export class AuthService {
     }
   }
 
+  async createUserWithSubscription({
+    name,
+    lastName,
+    email,
+    password,
+  }: UserCreateReq): Promise<UserEntity> {
+    try {
+      const passwordHash = await bcrypt.hash(password, process.env.SALT_BCRYPT);
+      const createUser = this.prismaService.users.create({
+        data: {
+          name,
+          lastName,
+          email,
+          passwordHash,
+        },
+      });
+      const createSubscription = this.prismaService.subscription.create({
+        data: {
+          id: "generated uuid",
+          tier_id: 123,
+          user_id: "generate uuid for user",
+          start_date: new Date(),
+          end_date: new Date()
+        }, 
+      });
+
+      const [createduser,] = await this.prismaService.$transaction([createUser, createSubscription])
+      return new UserEntity(createduser);
+    } catch (error) {
+      console.log(error);
+      throw new Error(error);
+    }
+  }
+
   async findeByEmail(email: string): Promise<UserEntity | undefined> {
     return this.prismaService.users.findFirst({
       where: {

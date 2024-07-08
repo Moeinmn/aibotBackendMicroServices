@@ -33,7 +33,7 @@ model pricing_tier {
 }
 
 model subscription {
-  id         Int          @id @default(autoincrement())
+  id         String          @id @default(uuid())
   user_id    String
   tier_id    Int
   start_date DateTime
