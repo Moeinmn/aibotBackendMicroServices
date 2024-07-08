@@ -17,6 +17,28 @@ export class BotCreate {
   @IsOptional()
   files?: string[];
 }
+
+export class BotUpdateDataSource {
+  @IsString()
+  @IsOptional()
+  text_input?: string;
+
+  @IsArray()
+  @IsOptional()
+  qANDa_input?: [];
+
+  @IsArray()
+  @IsOptional()
+  urls?: string[];
+
+  @IsArray()
+  @IsOptional()
+  files?: string[];
+
+  @IsArray()
+  @IsOptional()
+  uploadedFile?:any;
+}
 export class CreateConversationDto {
   @IsString()
   @IsNotEmpty()

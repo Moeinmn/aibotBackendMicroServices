@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common/decorators';
 
 import { MyBotsService } from './bots.service';
-import { BotCreate, CreateConversationDto } from './dtos/mybots.dto';
+import { BotCreate, BotUpdateDataSource, CreateConversationDto } from './dtos/mybots.dto';
 
 import { User } from '../decorators/user.decorator';
 import { ChatSessionId } from '../decorators/chatSession.decorator';
@@ -22,9 +22,10 @@ import { Request, Response } from 'express';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
 import { cwd } from 'process';
-import { existsSync, mkdirSync, renameSync } from 'fs';
+import { chownSync, copyFileSync, existsSync, mkdirSync, readdirSync, renameSync, rmdirSync, unlinkSync } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
+import { error } from 'console';
 
 @Controller({
   path: 'mybots',
@@ -61,6 +62,22 @@ export class MyBotsController {
     @Body() botsDTO: BotCreate,
     @User() user?: any,
   ) {
+    if (typeof botsDTO.urls === 'string') {
+      try {
+        botsDTO.urls = JSON.parse(botsDTO.urls);
+      } catch (err) {
+        throw new error('Invalid JSON format for urls');
+      }
+    };
+
+    if (typeof botsDTO.qANDa_input === 'string') {
+      try {
+        botsDTO.qANDa_input = JSON.parse(botsDTO.qANDa_input);
+      } catch (err) {
+        throw new error('Invalid JSON format for urls');
+      }
+    }
+
     const createdBot = await this.mybotsServices.cretaeBots(user?.user_id);
     const data = {
       ...botsDTO,
@@ -74,14 +91,16 @@ export class MyBotsController {
       );
       const fileUrlPrefix =
         process.env.IMAGE_URL_PREFIX || 'http://localhost:12000';
-      const fileLink = `${fileUrlPrefix}/uploads/${createdBot.bot_id}/${files[0].originalname}`;
-      data['static_files'] = `[${fileLink}]`;
+        const fileLinks = files.map(file => `${fileUrlPrefix}/uploads/${createdBot.bot_id}/${file.originalname}`);
+        data['static_files'] = fileLinks;
     }
 
     const createdDataSource = await this.mybotsServices.createDataSource(data);
 
     return createdDataSource;
-  }
+  };
+
+
 
   @Get('/list')
   @UseGuards(JwtAuthGuard)
@@ -98,6 +117,129 @@ export class MyBotsController {
       user.user_id,
     );
   };
+  
+
+  @Post("/dataSource/update/:bot_id")
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(
+    FilesInterceptor('files', 7, {
+      storage: multer.diskStorage({
+        destination: function (req, file, cb) {
+          const destinationPath = `${cwd()}/uploads/tmp`;
+
+          if (!existsSync(destinationPath)) {
+            try {
+              mkdirSync(destinationPath, { recursive: true }); // Ensure parent directories are created
+            } catch (err) {
+              return cb(err);
+            }
+          }
+
+          cb(null, destinationPath);
+        },
+        filename: function (req, file, cb) {
+          cb(null, file.originalname);
+        },
+      }),
+    }),
+  )
+  async updateDataSource(
+    @UploadedFiles() files: any,
+    @Body() botsDTO: BotUpdateDataSource,
+    @User() user?: any,
+    @Param('bot_id') botId?:string
+    
+  ){
+    if (typeof botsDTO.urls === 'string') {
+      try {
+        botsDTO.urls = JSON.parse(botsDTO.urls);
+      } catch (err) {
+        throw new error('Invalid JSON format for urls');
+      }
+    };
+
+    if (typeof botsDTO.qANDa_input === 'string') {
+      try {
+        botsDTO.qANDa_input = JSON.parse(botsDTO.qANDa_input);
+      } catch (err) {
+        throw new error('Invalid JSON format for urls');
+      }
+    };
+
+
+    const { uploadedFile: uploadedFileStr, ...data } = botsDTO;
+    console.log(data)
+   
+    const result = await this.mybotsServices.findeDataSource(botId,user.user_id);
+    let static_files = result.static_files;
+     data['static_files']=static_files;
+
+    // step 1 (check file delted ):
+    let uploadedFile = [];
+       if (botsDTO.uploadedFile) {
+          uploadedFile = JSON.parse(botsDTO.uploadedFile);
+          console.log(uploadedFile)
+      }
+      if(uploadedFile.length > 0){
+        for (const file of uploadedFile) {
+          const { url, fileName, remove } = file;
+          
+          // // Check if file needs to be removed
+          if (remove === "true" || remove==true) {
+            try {
+              // Construct the file path
+              const filePath = `${cwd()}/uploads/${botId}/${fileName}`;
+    
+              // Check if file exists and delete it
+              if (existsSync(filePath)) {
+                unlinkSync(filePath);
+              }
+            } catch (error) {
+              throw new HttpException(`Failed to delete file ${fileName}`, 500);
+            }
+          }
+        };
+        data['static_files'] = static_files.filter(url => {
+          const uploaded = uploadedFile.find(upFile => upFile.url === url);
+          return !(uploaded && (uploaded.remove == "true" || uploaded.remove == true));
+        });
+
+      }
+ 
+
+
+        if (files?.length > 0) {
+          const targetDir = `${cwd()}/uploads/${botId}`;
+          if (!existsSync(targetDir)) {
+            mkdirSync(targetDir, { recursive: true });
+          }
+          
+          const tempDir = `${cwd()}/uploads/tmp`;
+          const tempFiles = readdirSync(tempDir);
+      
+          for (const file of tempFiles) {
+            const tempFilePath = `${tempDir}/${file}`;
+            const targetFilePath = `${targetDir}/${file}`;
+            copyFileSync(tempFilePath, targetFilePath);
+            unlinkSync(tempFilePath); 
+          };
+
+         rmdirSync(tempDir, { recursive: true });
+
+          const fileUrlPrefix =
+          process.env.IMAGE_URL_PREFIX || 'http://localhost:12000';
+          const fileLinks = files.map(file => `${fileUrlPrefix}/uploads/${botId}/${file.originalname}`);
+          data['static_files'] = [...data['static_files'],...fileLinks]
+
+        };
+       
+     
+        const updatedDataSource=await this.mybotsServices.updateDataSource(data,result.datasource_id);
+        return updatedDataSource;
+
+       
+  }
+
 
   @Get('/dataSource/:bot_id')
   @UseGuards(JwtAuthGuard)
