@@ -8,34 +8,35 @@ datasource db {
 }
 
 model users {
-  user_id       String         @id @default(uuid())
-  name          String         @db.VarChar(255)
-  lastName      String?        @db.VarChar(255)
-  email         String?        @unique @db.VarChar(255)
-  passwordHash  String         @db.VarChar(255)
-  created_at    DateTime       @default(now())
-  updated_at    DateTime       @updatedAt
-  bots          bots[]
-  subscriptions subscription[]
+  user_id              String         @id @default(uuid())
+  name                 String         @db.VarChar(255)
+  lastName             String?        @db.VarChar(255)
+  email                String?        @unique @db.VarChar(255)
+  passwordHash         String         @db.VarChar(255)
+  created_at           DateTime       @default(now())
+  updated_at           DateTime       @updatedAt
+  bots                 bots[]
+  activeSubscriptionId String?        @db.VarChar(255) // Stores the ID of the active subscription
+  subscriptions        subscription[] // Array to store all subscriptions related to this user
 }
 
 model pricing_tier {
   id            Int            @id @default(autoincrement())
   tier_name     String         @db.VarChar(255)
   price         Float
-  bot_count     Int            
-  context_limit   Int            
-  token_limit   Int            
-  storage_limit Int            
+  bot_count     Int
+  context_limit Int
+  token_limit   Int
+  storage_limit Int
   //memory
   //models
   subscriptions subscription[]
 }
 
 model subscription {
-  id         String          @id @default(uuid())
+  id         String       @id @default(uuid())
   user_id    String
-  tier_id    Int
+  tier_id    Int          @default(0)
   start_date DateTime
   end_date   DateTime
   user       users        @relation(fields: [user_id], references: [user_id])
@@ -64,12 +65,12 @@ model bots {
 }
 
 model datasources {
-  datasource_id  String @id @default(uuid())
-  bot_id         String 
+  datasource_id  String  @id @default(uuid())
+  bot_id         String
   static_files   Json?   @default("[]")
-  urls           Json?  @default("[]")
-  text_input     String?   @default("") @db.VarChar(255)
-  qANDa_input    Json?  @default("[]")
+  urls           Json?   @default("[]")
+  text_input     String? @default("") @db.VarChar(255)
+  qANDa_input    Json?   @default("[]")
   knowledge_base Json?   @default("{}")
   total_char     String? @db.VarChar(255)
   bot            bots    @relation(fields: [bot_id], references: [bot_id], onDelete: Cascade)

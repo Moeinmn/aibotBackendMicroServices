@@ -38,7 +38,7 @@ export class AuthController {
       throw new HttpException('Email already registered', 401);
     }
 
-    const userCreated = await this.authServices.creatUser(userCreatDTO);
+    const userCreated = await this.authServices.createUserWithSubscription(userCreatDTO);
   
     return userCreated;
   }

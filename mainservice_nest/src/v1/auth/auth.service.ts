@@ -12,6 +12,8 @@ import * as jwt from 'jsonwebtoken';
 import * as bcrypt from 'bcrypt';
 import { Redis } from 'ioredis';
 import { JwtService } from '@nestjs/jwt';
+import { v4 as uuidv4 } from 'uuid';
+import * as dayjs from 'dayjs'
 // import { userType } from '@prisma/client';
 
 interface payloadJWT {
@@ -30,7 +32,7 @@ export class AuthService {
     @Inject('REDIS_CLIENT') private readonly redisClient: Redis,
     private jwtService: JwtService,
 
-  ) {}
+  ) { }
 
   async creatUser({
     name,
@@ -63,25 +65,38 @@ export class AuthService {
   }: UserCreateReq): Promise<UserEntity> {
     try {
       const passwordHash = await bcrypt.hash(password, process.env.SALT_BCRYPT);
+      const userId = uuidv4();
+      const subscriptionId = uuidv4();
+
       const createUser = this.prismaService.users.create({
         data: {
+          user_id: userId,
           name,
           lastName,
           email,
           passwordHash,
+          activeSubscriptionId: subscriptionId,
         },
       });
+
+      const startDate = dayjs();
+      const endDate = startDate.add(30, 'day');
+
+      const formattedStartDate = startDate.toISOString();
+      const formattedEndDate = endDate.toISOString();
+
       const createSubscription = this.prismaService.subscription.create({
         data: {
-          id: "generated uuid",
-          tier_id: 123,
-          user_id: "generate uuid for user",
-          start_date: new Date(),
-          end_date: new Date()
-        }, 
+          id: subscriptionId,
+          tier_id: 0,
+          user_id: userId,
+          start_date: formattedStartDate,
+          end_date: formattedEndDate
+        },
       });
 
       const [createduser,] = await this.prismaService.$transaction([createUser, createSubscription])
+
       return new UserEntity(createduser);
     } catch (error) {
       console.log(error);
@@ -110,7 +125,7 @@ export class AuthService {
     }
     return null;
 
- 
+
   };
 
   async login(user: any) {
@@ -130,12 +145,12 @@ export class AuthService {
 
     return {
       ...user,
-      accessToken: this.jwtService.sign(payload,{ expiresIn: '1d' }),
+      accessToken: this.jwtService.sign(payload, { expiresIn: '1d' }),
       refreshToken: this.jwtService.sign(payload, { expiresIn: '7d' }),
     };
   }
 
-  async oAuthLogin(user:any) {
+  async oAuthLogin(user: any) {
     if (!user) {
       throw new Error('User not found!!!');
     }
