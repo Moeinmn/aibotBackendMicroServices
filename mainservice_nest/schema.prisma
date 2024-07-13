@@ -39,6 +39,7 @@ model subscription {
   tier_id    Int          @default(0)
   start_date DateTime
   end_date   DateTime
+  token_usage Int @default(0)
   user       users        @relation(fields: [user_id], references: [user_id])
   tier       pricing_tier @relation(fields: [tier_id], references: [id])
 }
@@ -95,6 +96,7 @@ model records {
   // bot_id            String
   llm_response      String
   user_message      String
+  //context_docs
   //current_page    String?    // Optional field - Add it in future
   user_message_time DateTime
   llm_response_time DateTime
