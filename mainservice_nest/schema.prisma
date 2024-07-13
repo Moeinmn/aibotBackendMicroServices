@@ -16,7 +16,7 @@ model users {
   created_at           DateTime       @default(now())
   updated_at           DateTime       @updatedAt
   bots                 bots[]
-  activeSubscriptionId String?        @db.VarChar(255) // Stores the ID of the active subscription
+  activeSubscriptionId String?        @unique() @db.VarChar(255)  // Stores the ID of the active subscription
   subscriptions        subscription[] // Array to store all subscriptions related to this user
 }
 
