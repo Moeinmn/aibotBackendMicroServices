@@ -1,0 +1,66 @@
+version: '3.9'
+
+services:
+  front:
+    image: hamyarchat/front:latest
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == master
+      resources:
+        limits:
+          cpus: '2'
+          memory: 512M
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "3000:3000"
+    networks:
+      - hamyarchat-net
+
+  langchain:
+    image: hamyarchat/langchain:latest
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "8000:8000"
+    networks:
+      - hamyarchat-net
+
+  # db:
+  #   image: postgres:latest
+  #   environment:
+  #     POSTGRES_USER: hamyarchat
+  #     POSTGRES_PASSWORD: secret
+  #     POSTGRES_DB: hamyarchatdb
+  #   volumes:
+  #     - db-data:/var/lib/postgresql/data
+  #   deploy:
+  #     replicas: 1
+  #     placement:
+  #       constraints:
+  #         - node.labels.role == worker
+  #     resources:
+  #       limits:
+  #         cpus: '0.25'
+  #         memory: 256M
+  #     restart_policy:
+  #       condition: on-failure
+  #   networks:
+  #     - hamyarchat-net
+
+networks:
+  hamyarchat-net:
+
+# volumes:
+#   db-data:
