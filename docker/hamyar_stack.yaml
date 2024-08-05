@@ -2,12 +2,12 @@ version: '3.9'
 
 services:
   front:
-    image: hamyarchat/front:latest
+    image: docker.arvancloud.ir/hamyarchat/front:latest
     deploy:
       replicas: 1
-      placement:
-        constraints:
-          - node.role == master
+      # placement:
+      #   constraints:
+      #     - node.role == master
       resources:
         limits:
           cpus: '2'
@@ -20,12 +20,12 @@ services:
       - hamyarchat-net
 
   langchain:
-    image: hamyarchat/langchain:latest
+    image: docker.arvancloud.ir/hamyarchat/langchain:latest
     deploy:
       replicas: 1
-      placement:
-        constraints:
-          - node.role == worker
+      # placement:
+      #   constraints:
+      #     - node.role == worker
       resources:
         limits:
           cpus: '1'
