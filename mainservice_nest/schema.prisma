@@ -7,17 +7,22 @@ datasource db {
   url      = env("DB_URL")
 }
 
+
 model users {
-  user_id              String         @id @default(uuid())
-  name                 String         @db.VarChar(255)
-  lastName             String?        @db.VarChar(255)
-  email                String?        @unique @db.VarChar(255)
-  passwordHash         String         @db.VarChar(255)
-  created_at           DateTime       @default(now())
-  updated_at           DateTime       @updatedAt
-  bots                 bots[]
+  user_id      String   @id @default(uuid())
+  name         String   @db.VarChar(255)
+  lastName     String?  @db.VarChar(255)
+  email        String?  @unique @db.VarChar(255)
+  photoUrl     String?  @db.VarChar(255)
+  mobileNumber  String?  @db.VarChar(255)
+  organisation  String?  @db.VarChar(255)
+  passwordHash String   @db.VarChar(255)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  bots         bots[]
   activeSubscriptionId String?        @unique() @db.VarChar(255)  // Stores the ID of the active subscription
   subscriptions        subscription[] // Array to store all subscriptions related to this user
+
 }
 
 model pricing_tier {
@@ -60,6 +65,7 @@ model bots {
   token_limit      Int             @default(8000000)
   token_limit_pp   Int             @default(8000)
   datasource       datasources[]
+  update_datasource Int             @default(0)
   user             users           @relation(fields: [user_id], references: [user_id])
   conversations    conversations[]
   //records          records[]
@@ -72,6 +78,7 @@ model datasources {
   urls           Json?   @default("[]")
   text_input     String? @default("") @db.VarChar(255)
   qANDa_input    Json?   @default("[]")
+  files_info     Json?   @default("[]")
   knowledge_base Json?   @default("{}")
   total_char     String? @db.VarChar(255)
   bot            bots    @relation(fields: [bot_id], references: [bot_id], onDelete: Cascade)

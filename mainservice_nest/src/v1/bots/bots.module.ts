@@ -5,6 +5,8 @@ import { MyBotsService } from './bots.service';
 import { AuthModule } from '../auth/auth.module';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { hostname } from 'os';
+import { S3Service } from 'src/infrastructure/s3/s3.service';
+
 
 @Module({
   imports: [
@@ -34,6 +36,6 @@ import { hostname } from 'os';
     ]),
   ],
   controllers: [MyBotsController],
-  providers: [MyBotsService],
+  providers: [MyBotsService,S3Service],
 })
 export class MyBotsModule {}

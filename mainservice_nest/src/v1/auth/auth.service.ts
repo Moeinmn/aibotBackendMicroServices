@@ -1,4 +1,4 @@
-import { Injectable, Inject, HttpException } from '@nestjs/common';
+import { Injectable, Inject, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from 'src/infrastructure/prisma/prisma.service';
 import {
   AuthPayloadDto,
@@ -6,6 +6,7 @@ import {
   UserEntity,
   UserForgetPassReq,
   UserResetPassReq,
+  UserUpdateReq,
 } from './dtos/auth.dto';
 // import { JwtService } from '@nestjs/jwt';
 import * as jwt from 'jsonwebtoken';
@@ -39,6 +40,7 @@ export class AuthService {
     lastName,
     email,
     password,
+    photoUrl
   }: UserCreateReq): Promise<UserEntity> {
     try {
       const passwordHash = await bcrypt.hash(password, process.env.SALT_BCRYPT);
@@ -54,6 +56,22 @@ export class AuthService {
     } catch (error) {
       console.log(error);
       throw new Error(error);
+    }
+  }
+  async updateUser(userId: string, updateData: UserUpdateReq): Promise<UserEntity> {
+    try {
+      const updatedUser = await this.prismaService.users.update({
+        where: {
+          user_id: userId,
+        },
+        data: {
+          ...updateData,
+        },
+      });
+      return new UserEntity(updatedUser);
+    } catch (error) {
+      console.error(error);
+      throw new HttpException('Failed to update user', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -119,14 +137,18 @@ export class AuthService {
         email: email,
       },
     });
-    if (user && (await bcrypt.compare(password, user.passwordHash))) {
-      const { passwordHash, ...result } = user;
-      return result;
+
+    if (!user) {
+      throw new HttpException('Email not found', HttpStatus.NOT_FOUND);
     }
-    return null;
 
+    if (!(await bcrypt.compare(password, user.passwordHash))) {
+      throw new HttpException('Incorrect password', HttpStatus.UNAUTHORIZED);
+    }
 
-  };
+    const { passwordHash, ...result } = user;
+    return result;
+  }
 
   async login(user: any) {
     const payload = {
@@ -135,13 +157,7 @@ export class AuthService {
         name: user.name,
       },
     };
-    console.log(
-      {
-        ...user,
-        accessToken: this.jwtService.sign(payload),
-        refreshToken: this.jwtService.sign(payload, { expiresIn: '7d' }),
-      }
-    )
+ 
 
     return {
       ...user,
@@ -150,9 +166,16 @@ export class AuthService {
     };
   }
 
-  async oAuthLogin(user: any) {
+  async oAuthLogin(user:any) {
+
     if (!user) {
       throw new Error('User not found!!!');
+    };
+
+    let existingUser = await this.findeByEmail(user.email);
+    
+    if (!existingUser) {
+      existingUser = await this.creatUser({...user,password:`${user.name}1234@`,photoUrl:user.picture});
     }
 
     const payload = {
